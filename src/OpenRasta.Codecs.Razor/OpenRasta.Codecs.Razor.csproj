@@ -34,9 +34,6 @@
     <Reference Include="OpenRasta">
       <HintPath>..\..\lib\openrasta\OpenRasta.dll</HintPath>
     </Reference>
-    <Reference Include="OpenRasta.DI.Windsor">
-      <HintPath>..\..\lib\openrasta\OpenRasta.DI.Windsor.dll</HintPath>
-    </Reference>
     <Reference Include="OpenRasta.Hosting.AspNet">
       <HintPath>..\..\lib\openrasta\OpenRasta.Hosting.AspNet.dll</HintPath>
     </Reference>
@@ -55,11 +52,6 @@
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\..\..\..\..\..\Program Files\Microsoft ASP.NET\ASP.NET Web Pages\v1.0\Assemblies\System.Web.WebPages.Razor.dll</HintPath>
     </Reference>
-    <Reference Include="System.Xml.Linq" />
-    <Reference Include="System.Data.DataSetExtensions" />
-    <Reference Include="Microsoft.CSharp" />
-    <Reference Include="System.Data" />
-    <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AspNetBuildManager.cs" />

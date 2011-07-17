@@ -47,11 +47,6 @@
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\..\..\..\..\..\..\Program Files\Microsoft ASP.NET\ASP.NET Web Pages\v1.0\Assemblies\System.Web.Razor.dll</HintPath>
     </Reference>
-    <Reference Include="System.Xml.Linq" />
-    <Reference Include="System.Data.DataSetExtensions" />
-    <Reference Include="Microsoft.CSharp" />
-    <Reference Include="System.Data" />
-    <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Configuration.cs" />
@@ -62,13 +57,13 @@
     <Compile Include="Resources\TestResource.cs" />
   </ItemGroup>
   <ItemGroup>
+    <EmbeddedResource Include="Views\TestView.cshtml" />
+  </ItemGroup>
+  <ItemGroup>
     <ProjectReference Include="..\OpenRasta.Codecs.Razor\OpenRasta.Codecs.Razor.csproj">
       <Project>{4AAB667E-3478-4794-940D-8AA028D586F6}</Project>
       <Name>OpenRasta.Codecs.Razor</Name>
     </ProjectReference>
-  </ItemGroup>
-  <ItemGroup>
-    <EmbeddedResource Include="Views\TestView.cshtml" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
