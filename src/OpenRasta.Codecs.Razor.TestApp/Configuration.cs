@@ -1,10 +1,10 @@
-using OpenRasta.Codecs.Razor.TestApp.Handlers;
-using OpenRasta.Codecs.Razor.TestApp.Resources;
-using OpenRasta.Configuration;
-
 namespace OpenRasta.Codecs.Razor.TestApp
 {
-    public class Configuration : IConfigurationSource //, IDependencyResolverFactory
+    using OpenRasta.Codecs.Razor.TestApp.Handlers;
+    using OpenRasta.Codecs.Razor.TestApp.Resources;
+    using OpenRasta.Configuration;
+
+    public class Configuration : IConfigurationSource
     {
         public void Configure()
         {
@@ -14,7 +14,7 @@ namespace OpenRasta.Codecs.Razor.TestApp
                     .AtUri("/home")
                     .And.AtUri("/")
                     .HandledBy<TestHandler>()
-                    .RenderedByRazor(new {index = "~/Views/TestView.cshtml"});           
+                    .RenderedByRazor(new { index = "~/Views/TestView.cshtml" });
             }
         }
     }

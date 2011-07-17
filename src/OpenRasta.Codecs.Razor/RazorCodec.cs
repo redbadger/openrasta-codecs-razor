@@ -1,83 +1,55 @@
-﻿using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Text;
-using System.Web.Compilation;
-using System.Web.Hosting;
-using OpenRasta.Collections.Specialized;
-using OpenRasta.DI;
-using OpenRasta.IO;
-using OpenRasta.Web;
-
-namespace OpenRasta.Codecs.Razor
+﻿namespace OpenRasta.Codecs.Razor
 {
+    using System;
+    using System.Collections.Generic;
+    using System.IO;
+    using System.Linq;
+    using System.Text;
+    using System.Web.Hosting;
+
+    using OpenRasta.Collections.Specialized;
+    using OpenRasta.DI;
+    using OpenRasta.IO;
+    using OpenRasta.Web;
+
     [MediaType("application/xhtml+xml;q=0.9", "xhtml")]
     [MediaType("text/html", "html")]
     [MediaType("application/vnd.openrasta.htmlfragment+xml;q=0.5")]
     [SupportedType(typeof(RazorViewBase))]
     public class RazorCodec : IMediaTypeWriter
     {
-        private static readonly string[] DEFAULT_VIEW_NAMES = new[] { "index", "default", "view", "get" };
-        private readonly IRequest _request;
-        private readonly IBuildManager _buildManager;
-        private IDictionary<string, string> _configuration;
+        private static readonly string[] DefaultViewNames = new[] { "index", "default", "view", "get" };
+
+        private readonly IBuildManager buildManager;
+
+        private readonly IRequest request;
+
+        private IDictionary<string, string> configuration;
 
         public RazorCodec(IRequest request)
         {
-            _request = request;
-            _buildManager = CreateBuildManager();
-        }
-
-        private static IBuildManager CreateBuildManager()
-        {
-            if (HostingEnvironment.IsHosted)
-            {
-                return new AspNetBuildManager();
-            }
-            return new StandAloneBuildManager(DependencyManager.GetService<IViewProvider>());
+            this.request = request;
+            this.buildManager = CreateBuildManager();
         }
 
         public object Configuration
         {
             get
             {
-                return _configuration;
+                return this.configuration;
             }
+
             set
             {
                 if (value != null)
                 {
-                    _configuration = value.ToCaseInvariantDictionary();
+                    this.configuration = value.ToCaseInvariantDictionary();
                 }
             }
         }
 
-        public void WriteTo(object entity, IHttpEntity response, string[] codecParameters)
-        {
-            // The default webforms renderer only associate the last parameter in the codecParameters
-            // with a page that has been defined in the rendererParameters.
-
-            var codecParameterList = new List<string>(codecParameters);
-            if (!string.IsNullOrEmpty(_request.UriName))
-                codecParameterList.Add(_request.UriName);
-
-            string templateAddress = GetViewVPath(_configuration, codecParameterList.ToArray(), _request.UriName);
-
-            var type = _buildManager.GetCompiledType(templateAddress);
-
-            var renderTarget = DependencyManager.GetService(type) as RazorViewBase;
-
-            if (renderTarget == null)
-            {
-                throw new InvalidOperationException("View page doesn't inherit from RazorViewBase");
-            }
-
-            renderTarget.SetResource(entity);
-            renderTarget.Errors = response.Errors;
-            RenderTarget(response, renderTarget);
-        }
-
-        public static string GetViewVPath(IDictionary<string, string> codecConfiguration, string[] codecUriParameters, string uriName)
+        public static string GetViewVPath(
+            IDictionary<string, string> codecConfiguration, string[] codecUriParameters, string uriName)
         {
             // if no pages were defined, return 501 not implemented
             if (codecConfiguration == null || codecConfiguration.Count == 0)
@@ -92,6 +64,7 @@ namespace OpenRasta.Codecs.Razor
                 {
                     return codecConfiguration[uriName];
                 }
+
                 return GetDefaultVPath(codecConfiguration);
             }
 
@@ -107,24 +80,57 @@ namespace OpenRasta.Codecs.Razor
             {
                 return GetDefaultVPath(codecConfiguration);
             }
+
             return null;
+        }
+
+        public void WriteTo(object entity, IHttpEntity response, string[] codecParameters)
+        {
+            // The default webforms renderer only associate the last parameter in the codecParameters
+            // with a page that has been defined in the rendererParameters.
+            var codecParameterList = new List<string>(codecParameters);
+            if (!string.IsNullOrEmpty(this.request.UriName))
+            {
+                codecParameterList.Add(this.request.UriName);
+            }
+
+            string templateAddress = GetViewVPath(
+                this.configuration, codecParameterList.ToArray(), this.request.UriName);
+
+            Type type = this.buildManager.GetCompiledType(templateAddress);
+
+            var renderTarget = DependencyManager.GetService(type) as RazorViewBase;
+
+            if (renderTarget == null)
+            {
+                throw new InvalidOperationException("View page doesn't inherit from RazorViewBase");
+            }
+
+            renderTarget.SetResource(entity);
+            renderTarget.Errors = response.Errors;
+            RenderTarget(response, renderTarget);
+        }
+
+        private static IBuildManager CreateBuildManager()
+        {
+            if (HostingEnvironment.IsHosted)
+            {
+                return new AspNetBuildManager();
+            }
+
+            return new StandAloneBuildManager(DependencyManager.GetService<IViewProvider>());
         }
 
         private static string GetDefaultVPath(IDictionary<string, string> codecConfiguration)
         {
-            foreach (string defaultViewName in DEFAULT_VIEW_NAMES)
-            {
-                if (codecConfiguration.Keys.Contains(defaultViewName))
-                {
-                    return codecConfiguration[defaultViewName];
-                }
-            }
-            return null;
+            return (from defaultViewName in DefaultViewNames
+                    where codecConfiguration.Keys.Contains(defaultViewName)
+                    select codecConfiguration[defaultViewName]).FirstOrDefault();
         }
 
         private static void RenderTarget(IHttpEntity response, RazorViewBase target)
         {
-            var targetEncoding = Encoding.UTF8;
+            Encoding targetEncoding = Encoding.UTF8;
             response.ContentType.CharSet = targetEncoding.HeaderName;
             TextWriter writer = null;
             var isDisposable = target as IDisposable;
@@ -143,7 +149,6 @@ namespace OpenRasta.Codecs.Razor
 
                 target.Output = writer;
                 target.Execute();
-
             }
             finally
             {
@@ -151,6 +156,7 @@ namespace OpenRasta.Codecs.Razor
                 {
                     isDisposable.Dispose();
                 }
+
                 if (ownsWriter)
                 {
                     writer.Dispose();

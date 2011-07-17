@@ -1,9 +1,7 @@
-﻿using System.Diagnostics.CodeAnalysis;
-using System.Web.Razor;
-using System.Web.WebPages.Razor;
-
-namespace OpenRasta.Codecs.Razor
+﻿namespace OpenRasta.Codecs.Razor
 {
+    using System.Web.Razor;
+
     public class OpenRastaRazorHostFactory
     {
         public static OpenRastaRazorHost CreateHost(RazorCodeLanguage codeLanguage)

@@ -1,38 +1,50 @@
-using System;
-using System.CodeDom;
-using System.CodeDom.Compiler;
-using System.Collections;
-using System.Globalization;
-using System.IO;
-using System.Linq;
-using System.Security;
-using System.Web;
-using System.Web.Compilation;
-using System.Web.Hosting;
-using System.Web.Razor;
-using System.Web.Razor.Generator;
-using System.Web.Razor.Parser;
-using System.Web.Razor.Parser.SyntaxTree;
-
 namespace OpenRasta.Codecs.Razor
 {
+    using System;
+    using System.CodeDom;
+    using System.CodeDom.Compiler;
+    using System.Globalization;
+    using System.IO;
+    using System.Linq;
+    using System.Security;
+    using System.Web;
+    using System.Web.Compilation;
+    using System.Web.Hosting;
+    using System.Web.Razor;
+    using System.Web.Razor.Parser;
+    using System.Web.Razor.Parser.SyntaxTree;
+
     [BuildProviderAppliesTo(BuildProviderAppliesTo.Web | BuildProviderAppliesTo.Code)]
     public class OpenRastaRazorBuildProvider : BuildProvider
     {
-        private static bool? _isFullTrust;
-        private CodeCompileUnit _generatedCode;
-        private OpenRastaRazorHost _host;
-        private string _physicalPath;
+        private static bool? isFullTrust;
 
-        private OpenRastaRazorHost Host
+        private CodeCompileUnit generatedCode;
+
+        private OpenRastaRazorHost host;
+
+        private string physicalPath;
+
+        public override CompilerType CodeCompilerType
         {
             get
             {
-                if (_host == null)
+                this.EnsureGeneratedCode();
+                CompilerType compilerType = this.GetDefaultCompilerTypeForLanguage(this.Host.CodeLanguage.LanguageName);
+                if (isFullTrust != false && this.Host.DefaultDebugCompilation)
                 {
-                    _host = CreateHost();
+                    try
+                    {
+                        SetIncludeDebugInfoFlag(compilerType);
+                        isFullTrust = true;
+                    }
+                    catch (SecurityException)
+                    {
+                        isFullTrust = false;
+                    }
                 }
-                return _host;
+
+                return compilerType;
             }
         }
 
@@ -40,21 +52,13 @@ namespace OpenRasta.Codecs.Razor
         {
             get
             {
-                MapPhysicalPath();
-                return _physicalPath;
+                this.MapPhysicalPath();
+                return this.physicalPath;
             }
-            set { _physicalPath = value; }
-        }
 
-        private void MapPhysicalPath()
-        {
-            if (_physicalPath == null && HostingEnvironment.IsHosted)
+            set
             {
-                string path = HostingEnvironment.MapPath(VirtualPath);
-                if (!String.IsNullOrEmpty(path) && File.Exists(path))
-                {
-                    _physicalPath = path;
-                }
+                this.physicalPath = value;
             }
         }
 
@@ -62,62 +66,36 @@ namespace OpenRasta.Codecs.Razor
         {
             get
             {
-                EnsureGeneratedCode();
-                return _generatedCode;
+                this.EnsureGeneratedCode();
+                return this.generatedCode;
             }
         }
 
-        public override CompilerType CodeCompilerType
+        private OpenRastaRazorHost Host
         {
             get
             {
-                EnsureGeneratedCode();
-                CompilerType compilerType = GetDefaultCompilerTypeForLanguage(Host.CodeLanguage.LanguageName);
-                if (_isFullTrust != false && Host.DefaultDebugCompilation)
-                {
-                    try
-                    {
-                        SetIncludeDebugInfoFlag(compilerType);
-                        _isFullTrust = true;
-                    }
-                    catch (SecurityException)
-                    {
-                        _isFullTrust = false;
-                    }
-                }
-                return compilerType;
+                return this.host ?? (this.host = this.CreateHost());
             }
-        }        
-
-        public override Type GetGeneratedType(CompilerResults results)
-        {
-            return results.CompiledAssembly.GetType(String.Format(CultureInfo.CurrentCulture, "{0}.{1}", Host.DefaultNamespace, GetClassName()));
         }
 
         public override void GenerateCode(AssemblyBuilder assemblyBuilder)
         {
-            assemblyBuilder.AddCodeCompileUnit(this, GeneratedCode);
+            assemblyBuilder.AddCodeCompileUnit(this, this.GeneratedCode);
         }
 
-        private OpenRastaRazorHost CreateHost()
+        public override Type GetGeneratedType(CompilerResults results)
         {
-            return OpenRastaRazorHostFactory.CreateHost(GetCodeLanguage());
-        }        
+            return
+                results.CompiledAssembly.GetType(
+                    string.Format(
+                        CultureInfo.CurrentCulture, "{0}.{1}", this.Host.DefaultNamespace, this.GetClassName()));
+        }
 
-        private RazorCodeLanguage GetCodeLanguage()
+        private static HttpParseException CreateExceptionFromParserError(RazorError error, string virtualPath)
         {
-            RazorCodeLanguage language = DetermineCodeLanguage(VirtualPath);
-            if (language == null && !String.IsNullOrEmpty(PhysicalPath))
-            {
-                language = DetermineCodeLanguage(PhysicalPath);
-            }
-
-            if (language == null)
-            {
-                throw new InvalidOperationException(String.Format(CultureInfo.CurrentCulture, "Could not determine the code language for '{0}'", VirtualPath));
-            }
-
-            return language;
+            return new HttpParseException(
+                error.Message + Environment.NewLine, null, virtualPath, null, error.Location.LineIndex + 1);
         }
 
         private static RazorCodeLanguage DetermineCodeLanguage(string fileName)
@@ -125,10 +103,11 @@ namespace OpenRasta.Codecs.Razor
             string extension = Path.GetExtension(fileName);
 
             // Use an if rather than else-if just in case Path.GetExtension returns null for some reason
-            if (String.IsNullOrEmpty(extension))
+            if (string.IsNullOrEmpty(extension))
             {
                 return null;
             }
+
             if (extension[0] == '.')
             {
                 extension = extension.Substring(1); // Trim off the dot
@@ -141,37 +120,69 @@ namespace OpenRasta.Codecs.Razor
             return language;
         }
 
+        private static void SetIncludeDebugInfoFlag(CompilerType compilerType)
+        {
+            compilerType.CompilerParameters.IncludeDebugInformation = true;
+        }
+
+        private OpenRastaRazorHost CreateHost()
+        {
+            return OpenRastaRazorHostFactory.CreateHost(this.GetCodeLanguage());
+        }
+
         private void EnsureGeneratedCode()
         {
-            if (_generatedCode == null)
+            if (this.generatedCode == null)
             {
-                var engine = new RazorTemplateEngine(Host);
+                var engine = new RazorTemplateEngine(this.Host);
                 GeneratorResults results;
-                using (TextReader reader = OpenReader())
+                using (TextReader reader = this.OpenReader())
                 {
-                    results = engine.GenerateCode(reader, GetClassName(), Host.DefaultNamespace, null);
+                    results = engine.GenerateCode(reader, this.GetClassName(), this.Host.DefaultNamespace, null);
                 }
+
                 if (!results.Success)
                 {
-                    throw CreateExceptionFromParserError(results.ParserErrors.Last(), VirtualPath);
+                    throw CreateExceptionFromParserError(results.ParserErrors.Last(), this.VirtualPath);
                 }
-                _generatedCode = results.GeneratedCode;
+
+                this.generatedCode = results.GeneratedCode;
             }
         }
 
         private string GetClassName()
         {
-            return ParserHelpers.SanitizeClassName(Path.GetFileName(VirtualPath));
+            return ParserHelpers.SanitizeClassName(Path.GetFileName(this.VirtualPath));
         }
 
-        private static HttpParseException CreateExceptionFromParserError(RazorError error, string virtualPath)
+        private RazorCodeLanguage GetCodeLanguage()
         {
-            return new HttpParseException(error.Message + Environment.NewLine, null, virtualPath, null, error.Location.LineIndex + 1);
+            RazorCodeLanguage language = DetermineCodeLanguage(this.VirtualPath);
+            if (language == null && !string.IsNullOrEmpty(this.PhysicalPath))
+            {
+                language = DetermineCodeLanguage(this.PhysicalPath);
+            }
+
+            if (language == null)
+            {
+                throw new InvalidOperationException(
+                    string.Format(
+                        CultureInfo.CurrentCulture, "Could not determine the code language for '{0}'", this.VirtualPath));
+            }
+
+            return language;
         }
 
-        private static void SetIncludeDebugInfoFlag(CompilerType compilerType)
+        private void MapPhysicalPath()
         {
-            compilerType.CompilerParameters.IncludeDebugInformation = true;
+            if (this.physicalPath == null && HostingEnvironment.IsHosted)
+            {
+                string path = HostingEnvironment.MapPath(this.VirtualPath);
+                if (!string.IsNullOrEmpty(path) && File.Exists(path))
+                {
+                    this.physicalPath = path;
+                }
+            }
         }
     }
 }

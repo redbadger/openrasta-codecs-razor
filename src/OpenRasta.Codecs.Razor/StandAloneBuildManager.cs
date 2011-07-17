@@ -1,52 +1,32 @@
-﻿using System;
-using System.CodeDom;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Reflection;
-using System.Web;
-using System.Web.Razor;
-using System.Web.Razor.Parser;
-using System.Web.Razor.Parser.SyntaxTree;
-
-namespace OpenRasta.Codecs.Razor
+﻿namespace OpenRasta.Codecs.Razor
 {
+    using System;
+    using System.Collections.Generic;
+    using System.IO;
+    using System.Linq;
+    using System.Web;
+    using System.Web.Razor;
+    using System.Web.Razor.Parser;
+    using System.Web.Razor.Parser.SyntaxTree;
+
     public class StandAloneBuildManager : IBuildManager
     {
-        private readonly IViewProvider _viewProvider;
+        private readonly IViewProvider viewProvider;
 
         public StandAloneBuildManager(IViewProvider viewProvider)
         {
-            _viewProvider = viewProvider;
+            this.viewProvider = viewProvider;
         }
 
         public Type GetCompiledType(string path)
         {
-            return CompilationManager.GetCompiledType(path, () => GenerateCode(path));
+            return CompilationManager.GetCompiledType(path, () => this.GenerateCode(path));
         }
 
-        private CompilationData GenerateCode(string path)
+        private static HttpParseException CreateExceptionFromParserError(RazorError error, string virtualPath)
         {
-            var viewDefinition = _viewProvider.GetViewDefinition(path);
-            var host = OpenRastaRazorHostFactory.CreateHost(DetermineCodeLanguage(viewDefinition.FileName));
-            var engine = new RazorTemplateEngine(host);
-            GeneratorResults results;
-            using (TextReader reader = viewDefinition.Contents)
-            {
-                results = engine.GenerateCode(reader, GetClassName(viewDefinition.FileName), host.DefaultNamespace, viewDefinition.FileName);
-            }
-            if (!results.Success)
-            {
-                throw CreateExceptionFromParserError(results.ParserErrors.Last(), path);
-            }
-            return new CompilationData(GetReferencedAssemblies(viewDefinition), results.GeneratedCode);
-        }
-
-        private static IEnumerable<string> GetReferencedAssemblies(ViewDefinition viewDefinition)
-        {
-            var referenced = viewDefinition.ViewAssembly.GetReferencedAssemblies().Select(x => x.CodeBase).ToList();
-            referenced.Add(viewDefinition.ViewAssembly.Location);
-            return referenced;
+            return new HttpParseException(
+                error.Message + Environment.NewLine, null, virtualPath, null, error.Location.LineIndex + 1);
         }
 
         private static RazorCodeLanguage DetermineCodeLanguage(string fileName)
@@ -54,10 +34,11 @@ namespace OpenRasta.Codecs.Razor
             string extension = Path.GetExtension(fileName);
 
             // Use an if rather than else-if just in case Path.GetExtension returns null for some reason
-            if (String.IsNullOrEmpty(extension))
+            if (string.IsNullOrEmpty(extension))
             {
                 return null;
             }
+
             if (extension[0] == '.')
             {
                 extension = extension.Substring(1); // Trim off the dot
@@ -75,9 +56,33 @@ namespace OpenRasta.Codecs.Razor
             return ParserHelpers.SanitizeClassName(fileName);
         }
 
-        private static HttpParseException CreateExceptionFromParserError(RazorError error, string virtualPath)
+        private static IEnumerable<string> GetReferencedAssemblies(ViewDefinition viewDefinition)
         {
-            return new HttpParseException(error.Message + Environment.NewLine, null, virtualPath, null, error.Location.LineIndex + 1);
+            List<string> referenced =
+                viewDefinition.ViewAssembly.GetReferencedAssemblies().Select(x => x.CodeBase).ToList();
+            referenced.Add(viewDefinition.ViewAssembly.Location);
+            return referenced;
+        }
+
+        private CompilationData GenerateCode(string path)
+        {
+            ViewDefinition viewDefinition = this.viewProvider.GetViewDefinition(path);
+            OpenRastaRazorHost host =
+                OpenRastaRazorHostFactory.CreateHost(DetermineCodeLanguage(viewDefinition.FileName));
+            var engine = new RazorTemplateEngine(host);
+            GeneratorResults results;
+            using (TextReader reader = viewDefinition.Contents)
+            {
+                results = engine.GenerateCode(
+                    reader, GetClassName(viewDefinition.FileName), host.DefaultNamespace, viewDefinition.FileName);
+            }
+
+            if (!results.Success)
+            {
+                throw CreateExceptionFromParserError(results.ParserErrors.Last(), path);
+            }
+
+            return new CompilationData(GetReferencedAssemblies(viewDefinition), results.GeneratedCode);
         }
     }
 }

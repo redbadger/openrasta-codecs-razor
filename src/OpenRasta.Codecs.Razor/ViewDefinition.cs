@@ -1,34 +1,45 @@
-﻿using System.IO;
-using System.Reflection;
-
-namespace OpenRasta.Codecs.Razor
+﻿namespace OpenRasta.Codecs.Razor
 {
+    using System.IO;
+    using System.Reflection;
+
     public class ViewDefinition
     {
-        private readonly TextReader _contents;
-        private readonly string _fileName;
-        private readonly Assembly _viewAssembly;
+        private readonly TextReader contents;
+
+        private readonly string fileName;
+
+        private readonly Assembly viewAssembly;
 
         public ViewDefinition(string fileName, TextReader contents, Assembly viewAssembly)
         {
-            _fileName = fileName;
-            _viewAssembly = viewAssembly;
-            _contents = contents;
-        }
-
-        public Assembly ViewAssembly
-        {
-            get { return _viewAssembly; }
-        }
-
-        public string FileName
-        {
-            get { return _fileName; }
+            this.fileName = fileName;
+            this.viewAssembly = viewAssembly;
+            this.contents = contents;
         }
 
         public TextReader Contents
         {
-            get { return _contents; }
+            get
+            {
+                return this.contents;
+            }
+        }
+
+        public string FileName
+        {
+            get
+            {
+                return this.fileName;
+            }
+        }
+
+        public Assembly ViewAssembly
+        {
+            get
+            {
+                return this.viewAssembly;
+            }
         }
     }
 }

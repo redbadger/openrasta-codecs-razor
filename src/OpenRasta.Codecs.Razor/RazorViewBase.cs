@@ -1,39 +1,28 @@
-﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.IO;
-using System.Web;
-using System.Web.WebPages;
-
-namespace OpenRasta.Codecs.Razor
+﻿namespace OpenRasta.Codecs.Razor
 {
+    using System.Collections.Generic;
+    using System.ComponentModel;
+    using System.IO;
+    using System.Web;
+    using System.Web.WebPages;
+
     public abstract class RazorViewBase
     {
         public IList<Error> Errors { get; set; }
+
         public TextWriter Output { get; set; }
 
         /// <summary>
-        /// Overridden in generated view class.
+        ///     This method is called by generated code and needs to stay in sync with the parser
         /// </summary>
-        [EditorBrowsable(EditorBrowsableState.Never)]
-        public abstract void Execute();
-
-        public void Write(HelperResult result)
+        public static void WriteLiteralTo(TextWriter writer, object content)
         {
-            WriteTo(Output, result);
+            writer.Write(content);
         }
 
-        public void Write(object value)
-        {
-            WriteTo(Output, value);
-        }
-
-        public void WriteLiteral(object value)
-        {
-            Output.Write(value);
-        }
-
-        // This method is called by generated code and needs to stay in sync with the parser
+        /// <summary>
+        ///     This method is called by generated code and needs to stay in sync with the parser
+        /// </summary>
         public static void WriteTo(TextWriter writer, HelperResult content)
         {
             if (content != null)
@@ -42,28 +31,35 @@ namespace OpenRasta.Codecs.Razor
             }
         }
 
-        // This method is called by generated code and needs to stay in sync with the parser
+        /// <summary>
+        ///     This method is called by generated code and needs to stay in sync with the parser
+        /// </summary>
         public static void WriteTo(TextWriter writer, object content)
         {
             writer.Write(HttpUtility.HtmlEncode(content));
         }
 
-        // This method is called by generated code and needs to stay in sync with the parser
-        public static void WriteLiteralTo(TextWriter writer, object content)
-        {
-            writer.Write(content);
-        }
+        /// <summary>
+        ///     Overridden in generated view class.
+        /// </summary>
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        public abstract void Execute();
 
         public abstract void SetResource(object resource);
-    }
 
-    public abstract class RazorViewBase<T> : RazorViewBase
-    {
-        public T Resource { get; private set; }
-
-        public override sealed void SetResource(object resource)
+        public void Write(HelperResult result)
         {
-            Resource = (T) resource;
+            WriteTo(this.Output, result);
+        }
+
+        public void Write(object value)
+        {
+            WriteTo(this.Output, value);
+        }
+
+        public void WriteLiteral(object value)
+        {
+            this.Output.Write(value);
         }
     }
 }

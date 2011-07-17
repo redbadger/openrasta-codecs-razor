@@ -1,28 +1,34 @@
-﻿using System;
-using System.CodeDom;
-using System.Collections.Generic;
-
-namespace OpenRasta.Codecs.Razor
+﻿namespace OpenRasta.Codecs.Razor
 {
+    using System.CodeDom;
+    using System.Collections.Generic;
+
     public class CompilationData
     {
-        private readonly IEnumerable<string> _additionalAssemblies;
-        private readonly CodeCompileUnit _code;
+        private readonly IEnumerable<string> additionalAssemblies;
+
+        private readonly CodeCompileUnit code;
 
         public CompilationData(IEnumerable<string> additionalAssemblies, CodeCompileUnit code)
         {
-            _additionalAssemblies = additionalAssemblies;
-            _code = code;
-        }
-
-        public CodeCompileUnit Code
-        {
-            get { return _code; }
+            this.additionalAssemblies = additionalAssemblies;
+            this.code = code;
         }
 
         public IEnumerable<string> AdditionalAssemblies
         {
-            get { return _additionalAssemblies; }
+            get
+            {
+                return this.additionalAssemblies;
+            }
+        }
+
+        public CodeCompileUnit Code
+        {
+            get
+            {
+                return this.code;
+            }
         }
     }
 }

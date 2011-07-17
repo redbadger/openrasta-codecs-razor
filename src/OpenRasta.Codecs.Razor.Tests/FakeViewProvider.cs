@@ -1,20 +1,21 @@
-﻿using System.IO;
-using System.Reflection;
-
-namespace OpenRasta.Codecs.Razor.Tests
+﻿namespace OpenRasta.Codecs.Razor.Tests
 {
+    using System.IO;
+    using System.Reflection;
+
     public class FakeViewProvider : IViewProvider
     {
-        private readonly string _viewCode;
+        private readonly string viewCode;
 
         public FakeViewProvider(string viewCode)
         {
-            _viewCode = viewCode;
+            this.viewCode = viewCode;
         }
 
         public ViewDefinition GetViewDefinition(string path)
         {
-            return new ViewDefinition("ViewFile.cshtml", new StringReader(_viewCode), Assembly.GetExecutingAssembly());
+            return new ViewDefinition(
+                "ViewFile.cshtml", new StringReader(this.viewCode), Assembly.GetExecutingAssembly());
         }
     }
 }

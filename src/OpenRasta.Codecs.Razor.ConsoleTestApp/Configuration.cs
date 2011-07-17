@@ -1,10 +1,11 @@
-using System.Reflection;
-using OpenRasta.Codecs.Razor.ConsoleTestApp.Handlers;
-using OpenRasta.Codecs.Razor.ConsoleTestApp.Resources;
-using OpenRasta.Configuration;
-
 namespace OpenRasta.Codecs.Razor.ConsoleTestApp
 {
+    using System.Reflection;
+
+    using OpenRasta.Codecs.Razor.ConsoleTestApp.Handlers;
+    using OpenRasta.Codecs.Razor.ConsoleTestApp.Resources;
+    using OpenRasta.Configuration;
+
     public class Configuration : IConfigurationSource
     {
         public void Configure()

@@ -1,33 +1,34 @@
-﻿using System.CodeDom;
-using System.Web.Razor;
-using System.Web.Razor.Generator;
-using System.Web.Razor.Parser.SyntaxTree;
-
-namespace OpenRasta.Codecs.Razor
+﻿namespace OpenRasta.Codecs.Razor
 {
+    using System.CodeDom;
+    using System.Web.Razor;
+    using System.Web.Razor.Generator;
+    using System.Web.Razor.Parser.SyntaxTree;
+
     public class OpenRastaCSharpRazorCodeGenerator : CSharpRazorCodeGenerator
     {
-        public OpenRastaCSharpRazorCodeGenerator(string className, string rootNamespaceName, string sourceFileName, RazorEngineHost host)
+        public OpenRastaCSharpRazorCodeGenerator(
+            string className, string rootNamespaceName, string sourceFileName, RazorEngineHost host)
             : base(className, rootNamespaceName, sourceFileName, host)
         {
         }
 
         protected override bool TryVisitSpecialSpan(Span span)
         {
-            return TryVisit<ResourceSpan>(span, VisitResourceSpan);
+            return TryVisit<ResourceSpan>(span, this.VisitResourceSpan);
         }
 
         private void VisitResourceSpan(ResourceSpan span)
         {
             string modelName = span.ResourceTypeName;
-            var baseType = new CodeTypeReference(Host.DefaultBaseClass, new CodeTypeReference(modelName));
+            var baseType = new CodeTypeReference(this.Host.DefaultBaseClass, new CodeTypeReference(modelName));
 
-            GeneratedClass.BaseTypes.Clear();
-            GeneratedClass.BaseTypes.Add(baseType);
+            this.GeneratedClass.BaseTypes.Clear();
+            this.GeneratedClass.BaseTypes.Add(baseType);
 
-            if (DesignTimeMode)
+            if (this.DesignTimeMode)
             {
-                WriteHelperVariable(span.Content, "__modelHelper");
+                this.WriteHelperVariable(span.Content, "__modelHelper");
             }
         }
     }

@@ -1,13 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-
-namespace OpenRasta.Codecs.Razor.ConsoleTestApp
+﻿namespace OpenRasta.Codecs.Razor.ConsoleTestApp
 {
-    class Program
+    using System;
+
+    internal class Program
     {
-        static void Main(string[] args)
+        private static void Main(string[] args)
         {
             var h = new HttpListenerHostWithConfiguration { Configuration = new Configuration() };
             h.Initialize(new[] { "http://+:9222/" }, "/", null);

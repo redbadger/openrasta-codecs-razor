@@ -1,8 +1,7 @@
-using System;
-using System.IO;
-
 namespace OpenRasta.Codecs.Razor
 {
+    using System;
+
     public interface IBuildManager
     {
         Type GetCompiledType(string path);

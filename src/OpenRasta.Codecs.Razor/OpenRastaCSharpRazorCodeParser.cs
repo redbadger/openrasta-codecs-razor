@@ -1,70 +1,83 @@
-﻿using System;
-using System.Globalization;
-using System.Web.Razor.Parser;
-using System.Web.Razor.Parser.SyntaxTree;
-using System.Web.Razor.Text;
-
-namespace OpenRasta.Codecs.Razor
+﻿namespace OpenRasta.Codecs.Razor
 {
+    using System.Globalization;
+    using System.Web.Razor.Parser;
+    using System.Web.Razor.Parser.SyntaxTree;
+    using System.Web.Razor.Text;
+
     public class OpenRastaCSharpRazorCodeParser : CSharpCodeParser
     {
         private const string ResourceKeyword = "resource";
-        private SourceLocation? _endInheritsLocation;
-        private bool _modelStatementFound;
+
+        private SourceLocation? endInheritsLocation;
+
+        private bool modelStatementFound;
 
         public OpenRastaCSharpRazorCodeParser()
         {
-            RazorKeywords.Add(ResourceKeyword, WrapSimpleBlockParser(BlockType.Directive, ParseResourceStatement));
+            this.RazorKeywords.Add(
+                ResourceKeyword, this.WrapSimpleBlockParser(BlockType.Directive, this.ParseResourceStatement));
         }
 
         protected override bool ParseInheritsStatement(CodeBlockInfo block)
         {
-            _endInheritsLocation = CurrentLocation;
+            this.endInheritsLocation = this.CurrentLocation;
             bool result = base.ParseInheritsStatement(block);
-            CheckForInheritsAndResourceStatements();
+            this.CheckForInheritsAndResourceStatements();
             return result;
         }
 
         private void CheckForInheritsAndResourceStatements()
         {
-            if (_modelStatementFound && _endInheritsLocation.HasValue)
+            if (this.modelStatementFound && this.endInheritsLocation.HasValue)
             {
-                OnError(_endInheritsLocation.Value, String.Format(CultureInfo.CurrentCulture, "The 'inherits' keyword is not allowed when a '{0}' keyword is used.", ResourceKeyword));
+                string message = string.Format(
+                    CultureInfo.CurrentCulture, 
+                    "The 'inherits' keyword is not allowed when a '{0}' keyword is used.", 
+                    ResourceKeyword);
+                this.OnError(this.endInheritsLocation.Value, message);
             }
         }
 
         private bool ParseResourceStatement(CodeBlockInfo block)
         {
-            End(MetaCodeSpan.Create);
+            this.End(MetaCodeSpan.Create);
 
-            SourceLocation endModelLocation = CurrentLocation;
-            if (_modelStatementFound)
+            SourceLocation endModelLocation = this.CurrentLocation;
+            if (this.modelStatementFound)
             {
-                OnError(endModelLocation, String.Format(CultureInfo.CurrentCulture, "Only one '{0}' statement is allowed in a file.", ResourceKeyword));
+                string message = string.Format(
+                    CultureInfo.CurrentCulture, "Only one '{0}' statement is allowed in a file.", ResourceKeyword);
+                this.OnError(endModelLocation, message);
             }
 
-            _modelStatementFound = true;
+            this.modelStatementFound = true;
 
             // Accept Whitespace up to the new line or non-whitespace character
-            Context.AcceptWhiteSpace(false);
+            this.Context.AcceptWhiteSpace(false);
 
             string typeName = null;
-            if (ParserHelpers.IsIdentifierStart(CurrentCharacter))
+            if (ParserHelpers.IsIdentifierStart(this.CurrentCharacter))
             {
-                using (Context.StartTemporaryBuffer())
+                using (this.Context.StartTemporaryBuffer())
                 {
                     // Accept a dotted-identifier, but allow <>
-                    AcceptTypeName();
-                    typeName = Context.ContentBuffer.ToString();
-                    Context.AcceptTemporaryBuffer();
+                    this.AcceptTypeName();
+                    typeName = this.Context.ContentBuffer.ToString();
+                    this.Context.AcceptTemporaryBuffer();
                 }
             }
             else
             {
-                OnError(endModelLocation, String.Format(CultureInfo.CurrentCulture, "The '{0}' keyword must be followed by a type name on the same line.", ResourceKeyword));
+                string message = string.Format(
+                    CultureInfo.CurrentCulture, 
+                    "The '{0}' keyword must be followed by a type name on the same line.", 
+                    ResourceKeyword);
+                this.OnError(endModelLocation, message);
             }
-            CheckForInheritsAndResourceStatements();
-            End(ResourceSpan.Create(Context, typeName));
+
+            this.CheckForInheritsAndResourceStatements();
+            this.End(ResourceSpan.Create(this.Context, typeName));
             return false;
         }
     }
