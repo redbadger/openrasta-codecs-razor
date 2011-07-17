@@ -2,11 +2,19 @@
 {
     public abstract class RazorViewBase<T> : RazorViewBase
     {
-        public T Resource { get; private set; }
+        private T resource;
+
+        public T Resource
+        {
+            get
+            {
+                return this.resource;
+            }
+        }
 
         public override sealed void SetResource(object resource)
         {
-            this.Resource = (T)resource;
+            this.resource = (T)resource;
         }
     }
 }

@@ -8,8 +8,8 @@
     <ProjectGuid>{D5DD25FE-B512-4363-8262-6B2D438BD539}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>OpenRasta.Codecs.Razor.Tests</RootNamespace>
-    <AssemblyName>OpenRasta.Codecs.Razor.Tests</AssemblyName>
+    <RootNamespace>OpenRasta.Codecs.Razor.Specs</RootNamespace>
+    <AssemblyName>OpenRasta.Codecs.Razor.Specs</AssemblyName>
     <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
   </PropertyGroup>
@@ -31,8 +31,8 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="nunit.framework">
-      <HintPath>..\..\lib\nunit-2.5\nunit.framework.dll</HintPath>
+    <Reference Include="Machine.Specifications, Version=0.4.13.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\Machine.Specifications.0.4.13.0\lib\Machine.Specifications.dll</HintPath>
     </Reference>
     <Reference Include="OpenRasta">
       <HintPath>..\..\lib\openrasta\OpenRasta.dll</HintPath>
@@ -52,7 +52,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="FakeViewProvider.cs" />
-    <Compile Include="StandAloneBuildManagerTests.cs" />
+    <Compile Include="StandAloneBuildManagerSpecs.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
@@ -60,6 +60,9 @@
       <Project>{4AAB667E-3478-4794-940D-8AA028D586F6}</Project>
       <Name>OpenRasta.Codecs.Razor</Name>
     </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="packages.config" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

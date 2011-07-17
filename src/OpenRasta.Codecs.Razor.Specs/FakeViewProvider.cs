@@ -1,4 +1,4 @@
-﻿namespace OpenRasta.Codecs.Razor.Tests
+﻿namespace OpenRasta.Codecs.Razor.Specs
 {
     using System.IO;
     using System.Reflection;
