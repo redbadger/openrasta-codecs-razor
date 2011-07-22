@@ -5,7 +5,11 @@
     using System.IO;
     using System.Linq;
     using System.Text;
+    using System.Web;
     using System.Web.Hosting;
+    using System.Web.WebPages;
+
+    using Microsoft.Web.Infrastructure.DynamicValidationHelper;
 
     using OpenRasta.Collections.Specialized;
     using OpenRasta.DI;
@@ -108,7 +112,20 @@
 
             renderTarget.SetResource(entity);
             renderTarget.Errors = response.Errors;
-            RenderTarget(response, renderTarget);
+            renderTarget.VirtualPath = templateAddress;
+            this.RenderTarget(response, renderTarget);
+        }
+
+        internal void ProcessRequestInternal(HttpContext context, WebPageBase page, TextWriter writer)
+        {
+            ValidationUtility.EnableDynamicValidation(context);
+            context.Request.ValidateInput();
+            HttpContextBase httpContextBase = new HttpContextWrapper(context);
+            WebPageRenderingBase startPage = StartPage.GetStartPage(
+                page, "_PageStart", WebPageHttpHandler.GetRegisteredExtensions());
+            page.Context = httpContextBase;
+            page.ExecutePageHierarchy(
+                new WebPageContext(httpContextBase, page, null), writer, startPage);
         }
 
         private static IBuildManager CreateBuildManager()
@@ -128,36 +145,36 @@
                     select codecConfiguration[defaultViewName]).FirstOrDefault();
         }
 
-        private static void RenderTarget(IHttpEntity response, RazorViewBase target)
+        private void RenderTarget(IHttpEntity response, RazorViewBase target)
         {
             Encoding targetEncoding = Encoding.UTF8;
             response.ContentType.CharSet = targetEncoding.HeaderName;
             TextWriter writer = null;
-            var isDisposable = target as IDisposable;
-            bool ownsWriter = false;
+            bool isNewWriter = false;
             try
             {
-                if (response is ISupportsTextWriter)
+                var responseWithOwnTextWriter = response as ISupportsTextWriter;
+                if (responseWithOwnTextWriter != null)
                 {
-                    writer = ((ISupportsTextWriter)response).TextWriter;
+                    writer = responseWithOwnTextWriter.TextWriter;
                 }
                 else
                 {
                     writer = new DeterministicStreamWriter(response.Stream, targetEncoding, StreamActionOnDispose.None);
-                    ownsWriter = true;
+                    isNewWriter = true;
                 }
 
-                target.Output = writer;
-                target.Execute();
+                this.ProcessRequestInternal(HttpContext.Current, target, writer);
             }
             finally
             {
-                if (isDisposable != null)
+                var disposable = target as IDisposable;
+                if (disposable != null)
                 {
-                    isDisposable.Dispose();
+                    disposable.Dispose();
                 }
 
-                if (ownsWriter)
+                if (isNewWriter)
                 {
                     writer.Dispose();
                 }

@@ -31,8 +31,10 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="OpenRasta">
+    <Reference Include="Microsoft.Web.Infrastructure, Version=1.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL" />
+    <Reference Include="OpenRasta, Version=2.0.3.0, Culture=neutral, PublicKeyToken=e04bf464d7caae73, processorArchitecture=MSIL">
       <HintPath>..\..\lib\openrasta\OpenRasta.dll</HintPath>
+      <SpecificVersion>False</SpecificVersion>
     </Reference>
     <Reference Include="OpenRasta.Hosting.AspNet">
       <HintPath>..\..\lib\openrasta\OpenRasta.Hosting.AspNet.dll</HintPath>
