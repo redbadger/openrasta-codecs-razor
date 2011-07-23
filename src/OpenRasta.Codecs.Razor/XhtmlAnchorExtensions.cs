@@ -15,15 +15,25 @@
     {
         public static void RenderResource(this IXhtmlAnchor anchor, Uri resource)
         {
-            var context = new InMemoryCommunicationContext
+            IDependencyResolver resolver = anchor.Resolver;
+            var oldContext = resolver.Resolve<ICommunicationContext>();
+
+            var newContext = new InMemoryCommunicationContext
                 {
                     Request =
                         new InMemoryRequest
                             {
-                               HttpMethod = "GET", Uri = resource, Entity = new HttpEntity { ContentLength = 0 } 
-                            }
+                                HttpMethod = "GET",
+                                Uri = resource,
+                                Entity = new HttpEntity { ContentLength = 0 },
+                                Headers = oldContext.Request.Headers,
+                                NegotiatedCulture = oldContext.Request.NegotiatedCulture
+                            },
+                    ApplicationBaseUri = oldContext.ApplicationBaseUri,
+                    User = oldContext.User
                 };
-            context.Request.Headers["Accept"] = MediaType.XhtmlFragment.ToString();
+            newContext.Request.Headers["Accept"] = MediaType.XhtmlFragment.ToString();
+
             var textWriterProvider = anchor.AmbientWriter as ISupportsTextWriter;
 
             StringBuilder inMemoryRendering = null;
@@ -31,24 +41,34 @@
             if (textWriterProvider != null && textWriterProvider.TextWriter != null)
             {
                 var textWriterEnabledEntity = new TextWriterEnabledEntity(textWriterProvider.TextWriter);
-                context.Response = new InMemoryResponse { Entity = textWriterEnabledEntity };
+                newContext.Response = new InMemoryResponse { Entity = textWriterEnabledEntity };
             }
             else
             {
                 inMemoryRendering = new StringBuilder();
                 var writer = new StringWriter(inMemoryRendering);
-                context.Response = new InMemoryResponse { Entity = new TextWriterEnabledEntity(writer) };
+                newContext.Response = new InMemoryResponse { Entity = new TextWriterEnabledEntity(writer) };
             }
 
-            anchor.Resolver.Resolve<IPipeline>().Run(context);
+            // Push new context
+            resolver.AddDependencyInstance<ICommunicationContext>(newContext, DependencyLifetime.PerRequest);
+            resolver.AddDependencyInstance<IRequest>(newContext.Request, DependencyLifetime.PerRequest);
+            resolver.AddDependencyInstance<IResponse>(newContext.Response, DependencyLifetime.PerRequest);
 
-            if (context.Response.Entity.Stream.Length > 0)
+            resolver.Resolve<IPipeline>().Run(newContext);
+
+            // Pop old context
+            resolver.AddDependencyInstance<ICommunicationContext>(oldContext, DependencyLifetime.PerRequest);
+            resolver.AddDependencyInstance<IRequest>(oldContext.Request, DependencyLifetime.PerRequest);
+            resolver.AddDependencyInstance<IResponse>(oldContext.Response, DependencyLifetime.PerRequest);
+
+            if (newContext.Response.Entity.Stream.Length > 0)
             {
-                context.Response.Entity.Stream.Position = 0;
+                newContext.Response.Entity.Stream.Position = 0;
                 Encoding destinationEncoding =
-                    Encoding.GetEncoding(context.Response.Entity.ContentType.CharSet ?? "UTF8");
+                    Encoding.GetEncoding(newContext.Response.Entity.ContentType.CharSet ?? "UTF8");
 
-                var reader = new StreamReader(context.Response.Entity.Stream, destinationEncoding);
+                var reader = new StreamReader(newContext.Response.Entity.Stream, destinationEncoding);
                 anchor.AmbientWriter.WriteUnencodedString(reader.ReadToEnd());
             }
             else if (inMemoryRendering != null && inMemoryRendering.Length > 0)
