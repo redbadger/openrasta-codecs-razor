@@ -25,7 +25,8 @@ namespace OpenRasta.Codecs.Razor.Specs
         private Establish context =
             () =>
             manager =
-            new StandAloneBuildManager(new FakeViewProvider(@"@resource System.String
+            new StandAloneBuildManager(new FakeViewProvider(@"@using OpenRasta.Codecs.Razor
+@inherits RazorViewBase<System.String>
 @System.DateTime.Now2"));
 
         private Because of = () => exception = Catch.Exception(() => manager.GetCompiledType("ViewFile.cshtml"));
@@ -41,7 +42,8 @@ namespace OpenRasta.Codecs.Razor.Specs
 
         private Establish context =
             () =>
-            manager = new StandAloneBuildManager(new FakeViewProvider(@"@resource System.String
+            manager = new StandAloneBuildManager(new FakeViewProvider(@"@using OpenRasta.Codecs.Razor
+@inherits RazorViewBase<System.String>
 @System.DateTime.Now"));
 
         private Because of = () => type = manager.GetCompiledType("ViewFile.cshtml");
